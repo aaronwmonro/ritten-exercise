@@ -2,14 +2,10 @@
 
 ## Cursor Cloud specific instructions
 
-This repository (`ritten-exercise`) is currently a blank starter repo with only a `README.md`. There is no application code, build system, or dependencies to install.
+This repository (`ritten-exercise`) is a Next.js 15 application with React, TypeScript, Tailwind CSS, and shadcn/ui components.
 
-- **No services to run.** There are no backend, frontend, or database services.
-- **No tests to execute.** There is no test framework or test files.
-- **No linting configured.** There are no linter configurations.
-- **No build step.** There is no build tooling.
-
-When code is added to this repository, update this section with:
-- Language/framework and how to install dependencies
-- How to run lint, tests, and the dev server
-- Any non-obvious setup caveats
+- **Install dependencies:** `npm install`
+- **Run dev server:** `npm run dev` (starts at http://localhost:3000)
+- **Build:** `npm run build`
+- **Lint:** `npm run lint`
+- **Tests:** `npm test` (Vitest)
