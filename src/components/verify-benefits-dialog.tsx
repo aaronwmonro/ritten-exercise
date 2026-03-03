@@ -1,7 +1,23 @@
 "use client";
 
 import * as React from "react";
-import { CircleCheck, Check, ChevronDown, X } from "lucide-react";
+import {
+  CircleCheck,
+  Calendar as CalendarIcon,
+  Check,
+  ChevronDown,
+  ChevronsUpDown,
+  ExternalLink,
+  Ellipsis,
+  Bell,
+  Users,
+  ThumbsUp,
+  ThumbsDown,
+  Plus,
+  Search,
+  ListFilter,
+  X,
+} from "lucide-react";
 import { format, isToday } from "date-fns";
 import {
   Dialog,
@@ -30,7 +46,664 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+
+// Mock client data for review step
+const MOCK_CLIENTS = [
+  {
+    id: "1",
+    name: "John Smith",
+    eligible: true,
+    insurance: "Cigna Health",
+    contact: "John Doe",
+  },
+  {
+    id: "2",
+    name: "John Smith",
+    eligible: true,
+    insurance: "Cigna Health",
+    contact: "John Doe",
+  },
+  {
+    id: "3",
+    name: "John Smith",
+    eligible: false,
+    insurance: "Cigna Health",
+    contact: "John Doe",
+  },
+  {
+    id: "4",
+    name: "John Smith",
+    eligible: false,
+    insurance: "Cigna Health",
+    contact: "John Doe",
+  },
+  {
+    id: "5",
+    name: "John Smith",
+    eligible: true,
+    insurance: "Cigna Health",
+    contact: "John Doe",
+  },
+  {
+    id: "6",
+    name: "John Smith",
+    eligible: true,
+    insurance: "Cigna Health",
+    contact: "John Doe",
+  },
+  {
+    id: "7",
+    name: "John Smith",
+    eligible: true,
+    insurance: "Cigna Health",
+    contact: "John Doe",
+  },
+  {
+    id: "8",
+    name: "John Smith",
+    eligible: true,
+    insurance: "Cigna Health",
+    contact: "John Doe",
+  },
+];
+
+interface Step1SelectProps {
+  selectedClientIds: Set<string>;
+  onToggleClientSelection: (clientId: string) => void;
+  onSelectAll: (clientIds: string[]) => void;
+  onDeselectAll: (clientIds: string[]) => void;
+}
+
+function Step1Select({
+  selectedClientIds,
+  onToggleClientSelection,
+  onSelectAll,
+  onDeselectAll,
+}: Step1SelectProps) {
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [activeTab, setActiveTab] = React.useState<"clients" | "groups">(
+    "clients",
+  );
+
+  const filteredClients = React.useMemo(() => {
+    if (!searchQuery.trim()) return MOCK_CLIENTS;
+    const q = searchQuery.toLowerCase();
+    return MOCK_CLIENTS.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.insurance.toLowerCase().includes(q) ||
+        c.contact.toLowerCase().includes(q),
+    );
+  }, [searchQuery]);
+
+  const selectedClients = MOCK_CLIENTS.filter((c) =>
+    selectedClientIds.has(c.id),
+  );
+  const selectedCount = selectedClients.length;
+  const eligibleCount = selectedClients.filter((c) => c.eligible).length;
+  const ineligibleCount = selectedClients.filter((c) => !c.eligible).length;
+
+  const allFilteredSelected =
+    filteredClients.length > 0 &&
+    filteredClients.every((c) => selectedClientIds.has(c.id));
+  const someFilteredSelected = filteredClients.some((c) =>
+    selectedClientIds.has(c.id),
+  );
+
+  const handleSelectAllChange = (checked: boolean) => {
+    const ids = filteredClients.map((c) => c.id);
+    if (checked) {
+      onSelectAll(ids);
+    } else {
+      onDeselectAll(ids);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Summary stats */}
+      <div className="flex items-center gap-0 overflow-hidden rounded-md border border-input">
+        <div className="flex flex-1 flex-col gap-3 border-r border-border px-3 py-2">
+          <span className="text-left text-xs font-medium text-foreground">
+            Selected
+          </span>
+          <span className="text-base font-normal leading-6 text-muted-foreground">
+            {selectedCount}
+          </span>
+        </div>
+        <div className="flex flex-1 flex-col gap-3 border-r border-border px-3 py-2">
+          <div className="flex items-center gap-1.5">
+            <ThumbsUp className="h-3.5 w-3.5 text-green-700" />
+            <span className="text-xs font-medium text-green-700">Eligible</span>
+          </div>
+          <span className="text-base font-normal leading-6 text-muted-foreground">
+            {eligibleCount}
+          </span>
+        </div>
+        <div className="flex flex-1 flex-col gap-3 px-3 py-2">
+          <div className="flex items-center gap-1.5">
+            <ThumbsDown className="h-3.5 w-3.5 text-amber-600" />
+            <span className="text-xs font-medium text-amber-600">
+              Ineligible
+            </span>
+            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <span className="text-base font-normal leading-6 text-muted-foreground">
+            {ineligibleCount}
+          </span>
+        </div>
+      </div>
+
+      {/* Tabs + Search + Filters */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-start">
+          <div
+            className="flex h-9 items-center gap-1 rounded-lg bg-muted p-0.5"
+            role="tablist"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "clients"}
+              onClick={() => setActiveTab("clients")}
+              className={cn(
+                "rounded-md px-3 py-1 text-sm font-medium transition-colors",
+                activeTab === "clients"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-foreground",
+              )}
+            >
+              Clients
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "groups"}
+              onClick={() => setActiveTab("groups")}
+              className={cn(
+                "rounded-md px-3 py-1 text-sm font-medium transition-colors",
+                activeTab === "groups"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-foreground",
+              )}
+            >
+              Groups
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="relative w-[300px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 pl-9"
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9 gap-2">
+                  Filters
+                  <ListFilter className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>Eligibility status</DropdownMenuItem>
+                <DropdownMenuItem>Insurance</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <span className="text-sm text-muted-foreground">
+              {filteredClients.length} Clients
+            </span>
+          </div>
+        </div>
+
+        {activeTab === "clients" ? (
+          <div className="flex flex-col gap-0 overflow-hidden rounded-md border border-border">
+            {/* Table header */}
+            <div className="flex h-8 items-center border-b border-border bg-muted/30">
+              <div className="flex h-8 w-8 shrink-0 items-center border-r border-border pl-2">
+                <Checkbox
+                  checked={
+                    allFilteredSelected
+                      ? true
+                      : someFilteredSelected
+                        ? "indeterminate"
+                        : false
+                  }
+                  onCheckedChange={(v) =>
+                    handleSelectAllChange(v === true || v === "indeterminate")
+                  }
+                />
+              </div>
+              <div className="flex min-w-[175px] shrink-0 items-center gap-2 border-r border-border px-2">
+                <span className="text-sm font-semibold text-foreground">
+                  Client
+                </span>
+                <ChevronsUpDown className="h-4 w-4 opacity-70" />
+              </div>
+              <div className="flex min-w-[85px] shrink-0 items-center border-r border-border px-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Eligibility
+                </span>
+              </div>
+              <div className="flex min-w-[85px] flex-1 items-center border-r border-border px-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Insurance
+                </span>
+              </div>
+              <div className="flex min-w-[85px] flex-1 items-center border-r border-border px-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Provider
+                </span>
+              </div>
+              <div className="w-10 shrink-0" />
+            </div>
+
+            {/* Table rows */}
+            <div className="max-h-[280px] overflow-y-auto">
+              {filteredClients.map((client) => (
+                <div
+                  key={client.id}
+                  className={cn(
+                    "flex h-10 items-center border-b border-border last:border-b-0",
+                    !client.eligible && "opacity-50",
+                  )}
+                >
+                  <div className="flex h-10 w-8 shrink-0 items-center border-r border-border pl-2">
+                    <Checkbox
+                      checked={selectedClientIds.has(client.id)}
+                      onCheckedChange={() => onToggleClientSelection(client.id)}
+                    />
+                  </div>
+                  <div className="flex min-w-[175px] shrink-0 items-center gap-3 px-2 py-2">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
+                      <span className="text-[10px] font-medium text-muted-foreground">
+                        {client.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </span>
+                    </div>
+                    <span className="truncate text-xs font-semibold text-foreground">
+                      {client.name}
+                    </span>
+                  </div>
+                  <div className="flex min-w-[85px] shrink-0 items-center px-2 py-2">
+                    {client.eligible ? (
+                      <Badge
+                        variant="success"
+                        className="bg-green-100 text-green-700"
+                      >
+                        Eligible
+                      </Badge>
+                    ) : (
+                      <Badge className="border-0 bg-amber-100 text-amber-600 hover:bg-amber-100">
+                        Ineligible
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex min-w-[85px] flex-1 items-center px-2 py-2">
+                    <span className="truncate text-xs text-muted-foreground">
+                      {client.insurance}
+                    </span>
+                  </div>
+                  <div className="flex min-w-[85px] flex-1 items-center px-2 py-2">
+                    <span className="truncate text-xs text-muted-foreground">
+                      {client.contact}
+                    </span>
+                  </div>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center px-3 py-2">
+                    <Ellipsis className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center rounded-md border border-border py-12">
+            <p className="text-sm text-muted-foreground">
+              Select a group to add clients.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface Step4ReviewProps {
+  name: string;
+  repeat: boolean;
+  everyValue: string;
+  everyUnit: "days" | "weeks" | "months";
+  startTime: "now" | "scheduled";
+  date: Date | undefined;
+  time: string;
+  endOption: "never" | "date";
+  endDate: Date | undefined;
+  completionEmail: boolean;
+  completionSms: boolean;
+  completionApp: boolean;
+  errorEmail: boolean;
+  errorSms: boolean;
+  errorApp: boolean;
+  selectedClientIds: Set<string>;
+  onToggleClientSelection: (clientId: string) => void;
+  onEditSettings: () => void;
+  onEditNotifications: () => void;
+  onEditClients: () => void;
+}
+
+function Step4Review({
+  name,
+  repeat,
+  everyValue,
+  everyUnit,
+  startTime,
+  date,
+  time,
+  endOption,
+  endDate,
+  completionEmail,
+  completionSms,
+  completionApp,
+  errorEmail,
+  errorSms,
+  errorApp,
+  selectedClientIds,
+  onToggleClientSelection,
+  onEditSettings,
+  onEditNotifications,
+  onEditClients,
+}: Step4ReviewProps) {
+  const frequencyDisplay = repeat ? `Every ${everyValue} ${everyUnit}` : "Once";
+
+  const startDateTimeDisplay = (() => {
+    if (!date) return "–";
+    if (startTime === "now") {
+      return `${format(date, "EEEE, MMMM do, yyyy")} @ ASAP EST`;
+    }
+    const [h, m] = time.split(":").map(Number);
+    const d = new Date(date);
+    d.setHours(isNaN(h) ? 0 : h, isNaN(m) ? 0 : m, 0, 0);
+    return `${format(d, "EEEE, MMMM do, yyyy '@' h:mm a")} EST`;
+  })();
+
+  const endsDisplay =
+    endOption === "never" ? "–" : endDate ? format(endDate, "PPP") : "–";
+
+  const completionChannels = [
+    completionEmail && "Email",
+    completionSms && "SMS",
+    completionApp && "App",
+  ].filter(Boolean) as string[];
+  const completionDisplay =
+    completionChannels.length > 0 ? completionChannels.join(" • ") : "None";
+
+  const errorChannels = [
+    errorEmail && "Email",
+    errorSms && "SMS",
+    errorApp && "App",
+  ].filter(Boolean) as string[];
+  const errorDisplay =
+    errorChannels.length > 0 ? errorChannels.join(" • ") : "None";
+
+  const selectedClients = MOCK_CLIENTS.filter((c) =>
+    selectedClientIds.has(c.id),
+  );
+  const selectedCount = selectedClients.length;
+  const eligibleCount = selectedClients.filter((c) => c.eligible).length;
+  const ineligibleCount = selectedClients.filter((c) => !c.eligible).length;
+
+  const ReviewCard = ({
+    icon: Icon,
+    title,
+    onEdit,
+    children,
+  }: {
+    icon: React.ElementType;
+    title: string;
+    onEdit: () => void;
+    children: React.ReactNode;
+  }) => (
+    <div className="flex flex-col gap-4 rounded-md border border-border p-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Icon className="h-3.5 w-3.5 text-foreground" />
+          <span className="text-sm font-semibold leading-none text-foreground">
+            {title}
+          </span>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-auto p-0 text-xs font-medium text-muted-foreground hover:text-foreground"
+          onClick={onEdit}
+        >
+          Edit
+        </Button>
+      </div>
+      <div className="flex flex-col gap-4 text-xs font-medium leading-none">
+        {children}
+      </div>
+    </div>
+  );
+
+  const ReviewRow = ({ label, value }: { label: string; value: string }) => (
+    <div className="grid grid-cols-[1fr_2fr] gap-8">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-foreground">{value}</span>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-6">
+      <ReviewCard icon={CalendarIcon} title="Settings" onEdit={onEditSettings}>
+        <ReviewRow label="Name" value={name || "Lorem Ipsum"} />
+        <ReviewRow label="Frequency" value={frequencyDisplay} />
+        <ReviewRow label="Start Date & Time" value={startDateTimeDisplay} />
+        <ReviewRow label="Ends" value={endsDisplay} />
+      </ReviewCard>
+
+      <ReviewCard
+        icon={Bell}
+        title="Notifications"
+        onEdit={onEditNotifications}
+      >
+        <ReviewRow label="Completion" value={completionDisplay} />
+        <ReviewRow label="Errors" value={errorDisplay} />
+      </ReviewCard>
+
+      <ReviewCard icon={Users} title="Clients" onEdit={onEditClients}>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-0 overflow-hidden rounded-md border border-input">
+            <div className="flex flex-1 flex-col gap-3 border-r border-border px-3 py-2">
+              <span className="text-left text-xs font-medium text-foreground">
+                Selected
+              </span>
+              <span className="text-base font-normal leading-6 text-muted-foreground">
+                {selectedCount}
+              </span>
+            </div>
+            <div className="flex flex-1 flex-col gap-3 border-r border-border px-3 py-2">
+              <div className="flex items-center gap-1.5">
+                <ThumbsUp className="h-3.5 w-3.5 text-green-700" />
+                <span className="text-xs font-medium text-green-700">
+                  Ready
+                </span>
+              </div>
+              <span className="text-base font-normal leading-6 text-muted-foreground">
+                {eligibleCount}
+              </span>
+            </div>
+            <div className="flex flex-1 flex-col gap-3 px-3 py-2">
+              <div className="flex items-center gap-1.5">
+                <ThumbsDown className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-xs font-medium text-amber-600">
+                  Ineligible
+                </span>
+                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <span className="text-base font-normal leading-6 text-muted-foreground">
+                {ineligibleCount}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="max-h-[300px] overflow-y-auto rounded-md border border-border">
+              {MOCK_CLIENTS.map((client) => (
+                <div
+                  key={client.id}
+                  className={cn(
+                    "flex h-10 items-center border-b border-border last:border-b-0",
+                    !client.eligible && "opacity-50",
+                  )}
+                >
+                  <div className="flex h-10 w-8 shrink-0 items-center border-r border-border pl-2">
+                    <Checkbox
+                      checked={selectedClientIds.has(client.id)}
+                      onCheckedChange={() => onToggleClientSelection(client.id)}
+                    />
+                  </div>
+                  <div className="flex min-w-[120px] flex-1 items-center gap-3 px-2 py-2">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
+                      <span className="text-[10px] font-medium text-muted-foreground">
+                        {client.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </span>
+                    </div>
+                    <span className="truncate text-xs font-semibold text-foreground">
+                      {client.name}
+                    </span>
+                  </div>
+                  <div className="flex min-w-[85px] shrink-0 items-center px-2 py-2">
+                    {client.eligible ? (
+                      <Badge
+                        variant="success"
+                        className="bg-green-100 text-green-700"
+                      >
+                        Eligible
+                      </Badge>
+                    ) : (
+                      <Badge className="border-0 bg-amber-100 text-amber-600 hover:bg-amber-100">
+                        Ineligible
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex min-w-[85px] flex-1 items-center px-2 py-2">
+                    <span className="truncate text-xs text-muted-foreground">
+                      {client.insurance}
+                    </span>
+                  </div>
+                  <div className="flex min-w-[85px] flex-1 items-center px-2 py-2">
+                    <span className="truncate text-xs text-muted-foreground">
+                      {client.contact}
+                    </span>
+                  </div>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center px-3 py-2">
+                    <Ellipsis className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                5 more
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </ReviewCard>
+    </div>
+  );
+}
+
+function StepIndicator({
+  step,
+  label,
+  currentStep,
+  onStepClick,
+}: {
+  step: 1 | 2 | 3 | 4;
+  label: string;
+  currentStep: 1 | 2 | 3 | 4;
+  onStepClick: (step: 1 | 2 | 3 | 4) => void;
+}) {
+  const isCompleted = currentStep > step;
+  const isCurrent = currentStep === step;
+  const isClickable = isCompleted;
+
+  const content = (
+    <>
+      <div
+        className={cn(
+          "flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
+          isCompleted || isCurrent
+            ? "bg-foreground"
+            : "border border-foreground",
+        )}
+      >
+        {isCompleted ? (
+          <Check className="h-2.5 w-2.5 text-background" />
+        ) : (
+          <span
+            className={cn(
+              "text-xs font-semibold",
+              isCurrent ? "text-background" : "text-foreground",
+            )}
+          >
+            {step}
+          </span>
+        )}
+      </div>
+      <span
+        className={cn(
+          "text-xs",
+          isCurrent || isCompleted ? "font-semibold" : "font-normal",
+          "text-foreground",
+        )}
+      >
+        {label}
+      </span>
+    </>
+  );
+
+  return (
+    <div
+      className={cn(
+        "flex w-full min-w-0 items-center justify-center gap-2",
+        currentStep < step && "opacity-30",
+      )}
+    >
+      {isClickable ? (
+        <button
+          type="button"
+          onClick={() => onStepClick(step)}
+          className="flex w-full min-w-0 cursor-pointer items-center justify-center gap-2 rounded-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset"
+        >
+          {content}
+        </button>
+      ) : (
+        <div className="flex w-full min-w-0 items-center justify-center gap-2">
+          {content}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface VerifyBenefitsDialogProps {
   open: boolean;
@@ -54,7 +727,7 @@ export function VerifyBenefitsDialog({
   const [endOption, setEndOption] = React.useState<"never" | "date">("never");
   const [endDateOpen, setEndDateOpen] = React.useState(false);
   const [endDate, setEndDate] = React.useState<Date | undefined>();
-  const [currentStep, setCurrentStep] = React.useState<1 | 2 | 3 | 4>(3);
+  const [currentStep, setCurrentStep] = React.useState<1 | 2 | 3 | 4>(2);
   const [name, setName] = React.useState("");
   const [completionEmail, setCompletionEmail] = React.useState(true);
   const [completionSms, setCompletionSms] = React.useState(true);
@@ -62,6 +735,45 @@ export function VerifyBenefitsDialog({
   const [errorEmail, setErrorEmail] = React.useState(true);
   const [errorSms, setErrorSms] = React.useState(true);
   const [errorApp, setErrorApp] = React.useState(false);
+  const [selectedClientIds, setSelectedClientIds] = React.useState<Set<string>>(
+    () => new Set(MOCK_CLIENTS.map((c) => c.id)),
+  );
+
+  const toggleClientSelection = React.useCallback((clientId: string) => {
+    setSelectedClientIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(clientId)) {
+        next.delete(clientId);
+      } else {
+        next.add(clientId);
+      }
+      return next;
+    });
+  }, []);
+
+  const selectClients = React.useCallback((clientIds: string[]) => {
+    setSelectedClientIds((prev) => {
+      const next = new Set(prev);
+      clientIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }, []);
+
+  const deselectClients = React.useCallback((clientIds: string[]) => {
+    setSelectedClientIds((prev) => {
+      const next = new Set(prev);
+      clientIds.forEach((id) => next.delete(id));
+      return next;
+    });
+  }, []);
+
+  // Reset to step 2 and selected clients whenever the dialog closes
+  React.useEffect(() => {
+    if (!open) {
+      setCurrentStep(2);
+      setSelectedClientIds(new Set(MOCK_CLIENTS.map((c) => c.id)));
+    }
+  }, [open]);
 
   const handleStartTimeChange = (v: "now" | "scheduled") => {
     setStartTime(v);
@@ -77,10 +789,11 @@ export function VerifyBenefitsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="flex h-[600px] max-w-[600px] w-[600px] flex-col gap-0 overflow-hidden p-0"
+        animation="bottom"
+        className="flex top-20 translate-y-0 h-[calc(100vh-160px)] max-w-[800px] w-[800px] flex-col gap-0 overflow-hidden p-0"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-6 border-b border-border px-6 py-3">
+        <div className="flex items-start justify-between gap-6 border-b border-border px-6 py-4">
           <div className="flex flex-1 items-center gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center">
               <CircleCheck className="h-8 w-8 text-foreground" />
@@ -106,187 +819,61 @@ export function VerifyBenefitsDialog({
         </div>
 
         {/* Progress indicator */}
-        <div className="flex h-[52px] items-center gap-2 border-b border-border bg-muted/50 px-6 py-4">
+        <div className="grid h-fit grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] items-center gap-0 border-b border-border bg-muted/50 px-6 py-3">
           {/* Step 1 - Select */}
+          <StepIndicator
+            step={1}
+            label="Select"
+            currentStep={currentStep}
+            onStepClick={setCurrentStep}
+          />
           <div
             className={cn(
-              "flex w-full flex-1 items-center justify-center gap-2",
-              currentStep < 1 && "opacity-30",
-            )}
-          >
-            <div
-              className={cn(
-                "flex h-5 w-5 items-center justify-center rounded-full",
-                currentStep > 1
-                  ? "bg-foreground"
-                  : currentStep === 1
-                    ? "bg-foreground"
-                    : "border border-foreground",
-              )}
-            >
-              {currentStep > 1 ? (
-                <Check className="h-3 w-3 text-background" />
-              ) : (
-                <span
-                  className={cn(
-                    "text-sm font-semibold",
-                    currentStep === 1 ? "text-background" : "text-foreground",
-                  )}
-                >
-                  1
-                </span>
-              )}
-            </div>
-            <span
-              className={cn(
-                "text-sm",
-                currentStep >= 1 ? "font-semibold" : "font-normal",
-                "text-foreground",
-              )}
-            >
-              Select
-            </span>
-          </div>
-          <div
-            className={cn(
-              "h-px flex-1 bg-border",
+              "h-px min-w-8 bg-muted-foreground",
               currentStep < 2 && "opacity-30",
             )}
           />
-          {/* Step 2 - Frequency */}
+          <StepIndicator
+            step={2}
+            label="Frequency"
+            currentStep={currentStep}
+            onStepClick={setCurrentStep}
+          />
           <div
             className={cn(
-              "flex w-full flex-1 items-center justify-center gap-2",
-              currentStep < 2 && "opacity-30",
-            )}
-          >
-            <div
-              className={cn(
-                "flex h-5 w-5 items-center justify-center rounded-full",
-                currentStep > 2
-                  ? "bg-foreground"
-                  : currentStep === 2
-                    ? "bg-foreground"
-                    : "border border-foreground",
-              )}
-            >
-              {currentStep > 2 ? (
-                <Check className="h-3 w-3 text-background" />
-              ) : (
-                <span
-                  className={cn(
-                    "text-sm font-semibold",
-                    currentStep === 2 ? "text-background" : "text-foreground",
-                  )}
-                >
-                  2
-                </span>
-              )}
-            </div>
-            <span
-              className={cn(
-                "text-sm",
-                currentStep >= 2 ? "font-semibold" : "font-normal",
-                "text-foreground",
-              )}
-            >
-              Frequency
-            </span>
-          </div>
-          <div
-            className={cn(
-              "h-px flex-1 bg-border",
+              "h-px min-w-8 bg-muted-foreground",
               currentStep < 3 && "opacity-30",
             )}
           />
-          {/* Step 3 - Details */}
+          <StepIndicator
+            step={3}
+            label="Details"
+            currentStep={currentStep}
+            onStepClick={setCurrentStep}
+          />
           <div
             className={cn(
-              "flex w-full flex-1 items-center justify-center gap-2",
-              currentStep < 3 && "opacity-30",
-            )}
-          >
-            <div
-              className={cn(
-                "flex h-5 w-5 items-center justify-center rounded-full",
-                currentStep > 3
-                  ? "bg-foreground"
-                  : currentStep === 3
-                    ? "bg-foreground"
-                    : "border border-foreground",
-              )}
-            >
-              {currentStep > 3 ? (
-                <Check className="h-3 w-3 text-background" />
-              ) : (
-                <span
-                  className={cn(
-                    "text-sm font-semibold",
-                    currentStep === 3 ? "text-background" : "text-foreground",
-                  )}
-                >
-                  3
-                </span>
-              )}
-            </div>
-            <span
-              className={cn(
-                "text-sm",
-                currentStep >= 3 ? "font-semibold" : "font-normal",
-                "text-foreground",
-              )}
-            >
-              Details
-            </span>
-          </div>
-          <div
-            className={cn(
-              "h-px flex-1 bg-border",
+              "h-px min-w-8 bg-muted-foreground",
               currentStep < 4 && "opacity-30",
             )}
           />
-          {/* Step 4 - Review */}
-          <div
-            className={cn(
-              "flex w-full flex-1 items-center justify-center gap-2",
-              currentStep < 4 && "opacity-30",
-            )}
-          >
-            <div
-              className={cn(
-                "flex h-5 w-5 items-center justify-center rounded-full border border-foreground",
-                currentStep === 4 && "bg-foreground",
-              )}
-            >
-              <span
-                className={cn(
-                  "text-sm font-semibold",
-                  currentStep === 4 ? "text-background" : "text-foreground",
-                )}
-              >
-                4
-              </span>
-            </div>
-            <span
-              className={cn(
-                "text-sm",
-                currentStep >= 4 ? "font-semibold" : "font-normal",
-                "text-foreground",
-              )}
-            >
-              Review
-            </span>
-          </div>
+          <StepIndicator
+            step={4}
+            label="Review"
+            currentStep={currentStep}
+            onStepClick={setCurrentStep}
+          />
         </div>
 
         {/* Body */}
         <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto p-6">
           {currentStep === 1 && (
-            <div className="flex flex-col gap-4">
-              <p className="text-sm text-muted-foreground">
-                Select content for step 1.
-              </p>
-            </div>
+            <Step1Select
+              selectedClientIds={selectedClientIds}
+              onToggleClientSelection={toggleClientSelection}
+              onSelectAll={selectClients}
+              onDeselectAll={deselectClients}
+            />
           )}
 
           {currentStep === 2 && (
@@ -794,11 +1381,28 @@ export function VerifyBenefitsDialog({
           )}
 
           {currentStep === 4 && (
-            <div className="flex flex-col gap-4">
-              <p className="text-sm text-muted-foreground">
-                Review summary will appear here.
-              </p>
-            </div>
+            <Step4Review
+              name={name}
+              repeat={repeat}
+              everyValue={everyValue}
+              everyUnit={everyUnit}
+              startTime={startTime}
+              date={date}
+              time={time}
+              endOption={endOption}
+              endDate={endDate}
+              completionEmail={completionEmail}
+              completionSms={completionSms}
+              completionApp={completionApp}
+              errorEmail={errorEmail}
+              errorSms={errorSms}
+              errorApp={errorApp}
+              selectedClientIds={selectedClientIds}
+              onToggleClientSelection={toggleClientSelection}
+              onEditSettings={() => setCurrentStep(2)}
+              onEditNotifications={() => setCurrentStep(3)}
+              onEditClients={() => setCurrentStep(1)}
+            />
           )}
         </div>
 
@@ -820,7 +1424,7 @@ export function VerifyBenefitsDialog({
               setCurrentStep((s) => Math.min(4, s + 1) as 1 | 2 | 3 | 4)
             }
           >
-            {currentStep === 4 ? "Submit" : "Next"}
+            {currentStep === 4 ? "Schedule" : "Next"}
           </Button>
         </div>
       </DialogContent>
