@@ -22,7 +22,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ClientTableRow, type Client } from "@/components/client-table-row";
-import { VerifyBenefitsDialog } from "@/components/verify-benefits-dialog";
+import {
+  VerifyBenefitsDialog,
+  type ScheduleInfo,
+} from "@/components/verify-benefits-dialog";
+import { BatchVerificationToast } from "@/components/batch-verification-toast";
+import { ScheduledVerificationBanner } from "@/components/scheduled-verification-banner";
 import { cn } from "@/lib/utils";
 
 const SAMPLE_CLIENTS: Client[] = Array.from({ length: 14 }, (_, i) => ({
@@ -45,6 +50,10 @@ export function ClientsPage() {
     new Set(),
   );
   const [verifyDialogOpen, setVerifyDialogOpen] = React.useState(false);
+  const [verificationToastOpen, setVerificationToastOpen] =
+    React.useState(false);
+  const [scheduledBanner, setScheduledBanner] =
+    React.useState<ScheduleInfo | null>(null);
 
   const selectAll = selectedRows.size === SAMPLE_CLIENTS.length;
   const someSelected = selectedRows.size > 0;
@@ -102,7 +111,9 @@ export function ClientsPage() {
                 <DropdownMenuItem>Filter by location</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <span className="text-sm text-muted-foreground">{SAMPLE_CLIENTS.length} Clients</span>
+            <span className="text-sm text-muted-foreground">
+              {SAMPLE_CLIENTS.length} Clients
+            </span>
           </div>
           {someSelected ? (
             <div className="flex shrink-0 flex-nowrap items-center gap-3">
@@ -138,7 +149,10 @@ export function ClientsPage() {
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-9 gap-2 rounded-md px-3">
+                  <Button
+                    variant="outline"
+                    className="h-9 gap-2 rounded-md px-3"
+                  >
                     More
                     <ChevronDown className="h-4 w-4" />
                   </Button>
@@ -171,24 +185,37 @@ export function ClientsPage() {
           )}
         </div>
 
+        {scheduledBanner ? (
+          <ScheduledVerificationBanner
+            schedule={scheduledBanner}
+            onClose={() => setScheduledBanner(null)}
+          />
+        ) : (
+          <BatchVerificationToast
+            open={verificationToastOpen}
+            onClose={() => setVerificationToastOpen(false)}
+            durationMs={10000}
+          />
+        )}
+
         {/* Table */}
         <div className="min-w-0 overflow-x-auto rounded-md border border-border">
           <div className="flex min-w-[900px] flex-col overflow-hidden">
-          <ClientTableHeader
-            selectAll={selectAll}
-            someSelected={someSelected}
-            onSelectAll={handleSelectAll}
-          />
-          <div className="flex flex-col">
-            {SAMPLE_CLIENTS.map((client) => (
-              <ClientTableRow
-                key={client.id}
-                client={client}
-                selected={selectedRows.has(client.id)}
-                onSelectRow={handleSelectRow}
-              />
-            ))}
-          </div>
+            <ClientTableHeader
+              selectAll={selectAll}
+              someSelected={someSelected}
+              onSelectAll={handleSelectAll}
+            />
+            <div className="flex flex-col">
+              {SAMPLE_CLIENTS.map((client) => (
+                <ClientTableRow
+                  key={client.id}
+                  client={client}
+                  selected={selectedRows.has(client.id)}
+                  onSelectRow={handleSelectRow}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
@@ -237,12 +264,22 @@ export function ClientsPage() {
       <VerifyBenefitsDialog
         open={verifyDialogOpen}
         onOpenChange={setVerifyDialogOpen}
+        onSchedule={(schedule) => {
+          if (schedule.startTime === "now") {
+            setScheduledBanner(null);
+            setVerificationToastOpen(true);
+          } else {
+            setVerificationToastOpen(false);
+            setScheduledBanner(schedule);
+          }
+        }}
       />
     </div>
   );
 }
 
-const TABLE_GRID = "grid grid-cols-[32px_minmax(325px,1fr)_1fr_1fr_1fr_1fr_40px]";
+const TABLE_GRID =
+  "grid grid-cols-[32px_minmax(325px,1fr)_1fr_1fr_1fr_1fr_40px]";
 
 function ClientTableHeader({
   selectAll,
@@ -254,7 +291,12 @@ function ClientTableHeader({
   onSelectAll: (checked: boolean) => void;
 }) {
   return (
-    <div className={cn(TABLE_GRID, "h-10 items-center border-b border-border bg-background")}>
+    <div
+      className={cn(
+        TABLE_GRID,
+        "h-10 items-center border-b border-border bg-background",
+      )}
+    >
       <div className="flex items-center pl-2">
         <Checkbox
           id="select-all-checkbox"

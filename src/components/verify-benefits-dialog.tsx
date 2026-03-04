@@ -705,14 +705,31 @@ function StepIndicator({
   );
 }
 
+export interface ScheduleInfo {
+  startTime: "now" | "scheduled";
+  date: Date | undefined;
+  time: string;
+  repeat: boolean;
+  everyValue: string;
+  everyUnit: "days" | "weeks" | "months";
+  endOption: "never" | "date";
+  endDate: Date | undefined;
+}
+
 interface VerifyBenefitsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called when user clicks Schedule on step 4. Passes schedule details for run-now vs scheduled. */
+  onSchedule?: (schedule: ScheduleInfo) => void;
+  /** Which step to show when dialog opens. 1 = Select clients, 2 = Frequency, etc. Default 2 (used when coming from clients page with pre-selection). */
+  initialStep?: 1 | 2 | 3 | 4;
 }
 
 export function VerifyBenefitsDialog({
   open,
   onOpenChange,
+  onSchedule,
+  initialStep = 2,
 }: VerifyBenefitsDialogProps) {
   const [startTime, setStartTime] = React.useState<"now" | "scheduled">("now");
   const [repeat, setRepeat] = React.useState(false);
@@ -727,7 +744,9 @@ export function VerifyBenefitsDialog({
   const [endOption, setEndOption] = React.useState<"never" | "date">("never");
   const [endDateOpen, setEndDateOpen] = React.useState(false);
   const [endDate, setEndDate] = React.useState<Date | undefined>();
-  const [currentStep, setCurrentStep] = React.useState<1 | 2 | 3 | 4>(2);
+  const [currentStep, setCurrentStep] = React.useState<1 | 2 | 3 | 4>(
+    initialStep,
+  );
   const [name, setName] = React.useState("");
   const [completionEmail, setCompletionEmail] = React.useState(true);
   const [completionSms, setCompletionSms] = React.useState(true);
@@ -736,7 +755,10 @@ export function VerifyBenefitsDialog({
   const [errorSms, setErrorSms] = React.useState(true);
   const [errorApp, setErrorApp] = React.useState(false);
   const [selectedClientIds, setSelectedClientIds] = React.useState<Set<string>>(
-    () => new Set(MOCK_CLIENTS.map((c) => c.id)),
+    () =>
+      initialStep === 1
+        ? new Set()
+        : new Set(MOCK_CLIENTS.map((c) => c.id)),
   );
 
   const toggleClientSelection = React.useCallback((clientId: string) => {
@@ -767,13 +789,20 @@ export function VerifyBenefitsDialog({
     });
   }, []);
 
-  // Reset to step 2 and selected clients whenever the dialog closes
+  // Sync step and selection when dialog opens; reset when it closes
   React.useEffect(() => {
-    if (!open) {
+    if (open) {
+      setCurrentStep(initialStep);
+      setSelectedClientIds(
+        initialStep === 1
+          ? new Set()
+          : new Set(MOCK_CLIENTS.map((c) => c.id)),
+      );
+    } else {
       setCurrentStep(2);
       setSelectedClientIds(new Set(MOCK_CLIENTS.map((c) => c.id)));
     }
-  }, [open]);
+  }, [open, initialStep]);
 
   const handleStartTimeChange = (v: "now" | "scheduled") => {
     setStartTime(v);
@@ -1420,9 +1449,23 @@ export function VerifyBenefitsDialog({
           </Button>
           <Button
             size="sm"
-            onClick={() =>
-              setCurrentStep((s) => Math.min(4, s + 1) as 1 | 2 | 3 | 4)
-            }
+            onClick={() => {
+              if (currentStep === 4) {
+                onSchedule?.({
+                  startTime,
+                  date,
+                  time,
+                  repeat,
+                  everyValue,
+                  everyUnit,
+                  endOption,
+                  endDate,
+                });
+                onOpenChange(false);
+              } else {
+                setCurrentStep((s) => Math.min(4, s + 1) as 1 | 2 | 3 | 4);
+              }
+            }}
           >
             {currentStep === 4 ? "Schedule" : "Next"}
           </Button>

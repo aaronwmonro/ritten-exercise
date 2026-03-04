@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,22 +14,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-const TABLE_GRID = "grid grid-cols-[32px_minmax(325px,1fr)_1fr_1fr_1fr_1fr_40px]";
+const TABLE_GRID =
+  "grid grid-cols-[32px_minmax(325px,1fr)_1fr_1fr_1fr_1fr_40px]";
 
-export type Client = {
-  id: number;
-  name: string;
-  dob: string;
-  age: number;
-  status: "Ready";
-  upcomingApt: string;
-  location: string;
-  provider: string;
-  insurance: string;
-  insuranceId: string;
-  coverage: string;
-  coverageDate: string;
-};
+import type { Client } from "@/lib/mock-clients";
 
 export function ClientTableRow({
   client,
@@ -39,6 +28,12 @@ export function ClientTableRow({
   selected: boolean;
   onSelectRow: (id: number, checked: boolean) => void;
 }) {
+  const router = useRouter();
+
+  const handleViewClient = () => {
+    router.push(`/clients/${client.id}`);
+  };
+
   return (
     <div
       className={cn(
@@ -70,9 +65,13 @@ export function ClientTableRow({
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium text-foreground">
+            <button
+              type="button"
+              onClick={handleViewClient}
+              className="truncate text-left text-sm font-medium text-foreground hover:underline focus:outline-none focus:underline"
+            >
               {client.name}
-            </span>
+            </button>
             <Badge variant="success" className="shrink-0 text-xs font-semibold">
               {client.status}
             </Badge>
@@ -122,7 +121,9 @@ export function ClientTableRow({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>View client</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleViewClient}>
+              View client
+            </DropdownMenuItem>
             <DropdownMenuItem>Edit</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Home,
   BookAudio,
@@ -14,18 +16,27 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const sidebarNavItems: { label: string; icon: LucideIcon; active?: boolean }[] =
-  [
-    { label: "Clients", icon: Users, active: true },
-    { label: "Benefits", icon: BookAudio },
-    { label: "Groups", icon: Users },
-    { label: "Occupancy", icon: Calendar },
-    { label: "Medication", icon: LineChart },
-    { label: "Labs", icon: Database },
-    { label: "", icon: SquareCheckBig },
-  ];
+const sidebarNavItems: {
+  label: string;
+  icon: LucideIcon;
+  href?: string;
+}[] = [
+  { label: "Clients", icon: Users, href: "/" },
+  { label: "Benefits", icon: SquareCheckBig, href: "/benefits" },
+  { label: "Groups", icon: Users },
+  { label: "Occupancy", icon: Calendar },
+  { label: "Medication", icon: LineChart },
+  { label: "Labs", icon: Database },
+];
 
-export function AppSidebar() {
+export function AppSidebar({
+  activeSection = "clients",
+}: {
+  activeSection?: "clients" | "benefits";
+}) {
+  const pathname = usePathname();
+  const isBenefits =
+    pathname?.startsWith("/benefits") ?? activeSection === "benefits";
   return (
     <div className="flex h-screen w-[248px] shrink-0">
       {/* Narrow icon strip */}
@@ -38,13 +49,17 @@ export function AppSidebar() {
           </div>
         </div>
         <nav className="flex flex-1 flex-col gap-1">
-          <SidebarIconButton icon={Home} />
+          <SidebarIconButton icon={Home} href="/" active={!isBenefits} />
           <SidebarIconButton icon={BookAudio} />
-          <SidebarIconButton icon={Users} active />
+          <SidebarIconButton icon={Users} href="/" active={!isBenefits} />
+          <SidebarIconButton
+            icon={SquareCheckBig}
+            href="/benefits"
+            active={isBenefits}
+          />
           <SidebarIconButton icon={Calendar} />
           <SidebarIconButton icon={LineChart} />
           <SidebarIconButton icon={Database} />
-          <SidebarIconButton icon={SquareCheckBig} />
         </nav>
         <div className="flex flex-col gap-1 pt-4">
           <SidebarIconButton icon={Search} />
@@ -65,7 +80,16 @@ export function AppSidebar() {
         <nav className="flex-1 p-2">
           <div className="flex flex-col gap-0.5">
             {sidebarNavItems.map((item) => (
-              <SidebarNavItem key={item.label || item.icon.name} {...item} />
+              <SidebarNavItem
+                key={item.label}
+                label={item.label}
+                icon={item.icon}
+                href={item.href}
+                active={
+                  (item.label === "Clients" && !isBenefits) ||
+                  (item.label === "Benefits" && isBenefits)
+                }
+              />
             ))}
           </div>
         </nav>
@@ -77,19 +101,27 @@ export function AppSidebar() {
 function SidebarIconButton({
   icon: Icon,
   active,
+  href,
 }: {
   icon: LucideIcon;
   active?: boolean;
+  href?: string;
 }) {
+  const className = cn(
+    "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
+    active
+      ? "bg-sidebar-border text-sidebar-accent-foreground"
+      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+  );
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        <Icon className="h-4 w-4" />
+      </Link>
+    );
+  }
   return (
-    <button
-      className={cn(
-        "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
-        active
-          ? "bg-sidebar-border text-sidebar-accent-foreground"
-          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-      )}
-    >
+    <button type="button" className={className}>
       <Icon className="h-4 w-4" />
     </button>
   );
@@ -98,21 +130,28 @@ function SidebarIconButton({
 function SidebarNavItem({
   label,
   active,
+  href,
 }: {
   label: string;
   icon: LucideIcon;
   active?: boolean;
+  href?: string;
 }) {
-  if (!label) return null;
+  const className = cn(
+    "flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm transition-colors",
+    active
+      ? "bg-sidebar-border font-medium text-sidebar-accent-foreground"
+      : "font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+  );
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {label}
+      </Link>
+    );
+  }
   return (
-    <button
-      className={cn(
-        "flex h-8 w-full items-center gap-2 rounded-md px-2 text-sm transition-colors",
-        active
-          ? "bg-sidebar-border font-medium text-sidebar-accent-foreground"
-          : "font-normal text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-      )}
-    >
+    <button type="button" className={className}>
       {label}
     </button>
   );
