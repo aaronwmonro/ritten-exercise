@@ -19,6 +19,8 @@ const TABLE_GRID =
 
 import type { Client } from "@/lib/mock-clients";
 
+export type { Client };
+
 export function ClientTableRow({
   client,
   selected,
