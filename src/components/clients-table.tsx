@@ -21,7 +21,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ClientTableRow, type Client } from "@/components/client-table-row";
+import { ClientTableRow } from "@/components/client-table-row";
+import type { Client } from "@/lib/mock-clients";
 import {
   VerifyBenefitsDialog,
   type ScheduleInfo,
